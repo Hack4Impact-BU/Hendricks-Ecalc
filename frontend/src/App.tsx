@@ -3,6 +3,8 @@ import Login from './pages/login.tsx'
 import Register from './pages/register.tsx'
 import Welcome from './pages/welcome.tsx'
 import Navbar from './components/navbar.tsx'
+import OcrUpload from './pages/ocrTest.tsx'
+
 import ForgotPassword from './pages/forgotPassword.tsx'
 import ResetPassword from './pages/resetPassword.tsx'
 import DeviceInfoSubmission from './pages/deviceInfoSubmission.tsx'
@@ -21,6 +23,7 @@ function App() {
         <Route path="/contact" element={<h1>Work in Progress</h1>} />
         <Route path="/login" element={<Login/>} />
         <Route path="/register" element={<Register/>} />
+        <Route path="/ocr" element={<OcrUpload/>} />
         <Route path="/welcome" element={<Welcome/>} />
         <Route path="/forgot-password" element={<ForgotPassword/>} />
         <Route path="/reset-password" element={<ResetPassword/>} />
