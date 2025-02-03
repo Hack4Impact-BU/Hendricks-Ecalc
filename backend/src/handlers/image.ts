@@ -16,13 +16,13 @@ const client = new vision.ImageAnnotatorClient({
 * The image should be in Base64 and without the header
 * You also need to make sure you have the json key for the google vision api
 */
-const processImage = async (req:Request, res:Response): Promise<void> => {
+const processImage = async (req:Request, res:Response): Promise<Response> => {
   try {
 
     const { imageBase64 }:ImageProcessing  = req.body;
 
     if (!imageBase64) {
-      res.status(400).json({ error: "No image provided" });
+      return res.status(400).json({ error: "No image provided" });
     }
 
     // Perform OCR using Google Vision
@@ -37,11 +37,11 @@ const processImage = async (req:Request, res:Response): Promise<void> => {
     const extractedText = textAnnotations.length > 0 ? textAnnotations[0].description : "No text found";
 
     // Then send the response to the frontend
-    res.json({ text: extractedText });
+    return res.json({ text: extractedText });
 
   } catch (error) {
     console.error("Error processing image:", error);
-    res.status(500).json({ error: "OCR processing failed" });
+    return res.status(500).json({ error: "OCR processing failed" });
   }
 }
 
