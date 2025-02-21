@@ -19,8 +19,12 @@ const client = new vision.ImageAnnotatorClient({
 */
 const extractSerialNumbers = async (deviceManufacturer:string, text: string): Promise<string> => {
   const patterns = [
-    { manufacturer: "Apple", regex: /\b[A-Z0-9]{10,12}\b/ },
-    { manufacturer: "Acer", regex: /\b[A-Z0-9]{22}\b/ },
+    { manufacturer: "Apple", 
+      regex: /(?:Serial(?:\s+No\.?|No\.?| Number)?:?\s*)([A-Z0-9]{10,14})/i,
+      fallback: /\b[A-Z0-9]{10,12}\b/ },
+    { manufacturer: "Acer", 
+      regex: /(?:S\/N:?\s*)([A-Z0-9]{22})|(?:SNID:?\s*)(\d{11})/i,
+      fallback: /\b[A-Z0-9]{22}\b|\b\d{11}\b/i},
     { manufacturer: "Lenovo", regex: /\b[A-Z0-9]{8,10}\b/ },
     { manufacturer: "Dell", regex: /\b[A-Z0-9]{7}\b/ },  // Example for Dell
     { manufacturer: "HP", regex: /\b[A-Z0-9]{10,12}\b/ },
@@ -33,7 +37,15 @@ const extractSerialNumbers = async (deviceManufacturer:string, text: string): Pr
   if (findCompany) {
     const testSerial = text.match(findCompany.regex);
     if (testSerial) {
-      return testSerial[0];
+      return testSerial[1]; //Extracting only serial number
+    }
+    
+    // If no match, use fallback (if available)
+    if (findCompany.fallback) {
+      const fallbackMatch = text.match(findCompany.fallback);
+      if (fallbackMatch) {
+        return fallbackMatch[0];  // Extract only the serial number from fallback
+      }
     }
   }
 
@@ -67,7 +79,7 @@ const processImage = async (req:Request, res:Response): Promise<void> => {
     const extractedText = textAnnotations.length > 0 ? textAnnotations[0].description as string : "No text found";
 
     // Pass in the manufacture and text from the OCR
-    const computerSerialNumber = await extractSerialNumbers("na",extractedText);
+    const computerSerialNumber = await extractSerialNumbers("Apple",extractedText);
 
     // Then send the response to the frontend
     res.json({ text: computerSerialNumber });
