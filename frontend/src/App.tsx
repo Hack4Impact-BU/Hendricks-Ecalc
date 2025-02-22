@@ -8,6 +8,8 @@ import ResetPassword from './pages/resetPassword.tsx'
 import DeviceInfoSubmission from './pages/deviceInfoSubmission.tsx'
 import SerialNumInput from './pages/serialNumInput.tsx'
 import AdminPage from './pages/adminPage.tsx'
+import Profile from './pages/profile.tsx'
+
 
 function App() {
 
@@ -27,6 +29,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword/>} />
         <Route path="/device-info-submission" element={<DeviceInfoSubmission/>} />
         <Route path="/serialNumInput" element={<SerialNumInput/>} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<AdminPage/>} />
       </Routes>
     </BrowserRouter>

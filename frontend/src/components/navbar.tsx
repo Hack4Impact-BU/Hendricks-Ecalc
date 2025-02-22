@@ -59,6 +59,7 @@ function Navbar() {
                     ) : (
                     <>
                         <Link to="/device-info-submission" className="no-underline hover:underline">Devices</Link>
+                        <Link to="/profile" className="no-underline hover:underline">Profile</Link>
                         {isAdmin ? <Link to="/admin" className="no-underline hover:underline">Admin</Link> : null}
                         <button onClick={handleClick} className="border p-1 items-center rounded-md bg-green-300 hover:bg-green-200 cursor-pointer active:bg-green-600">Sign Out</button>
                     </>
