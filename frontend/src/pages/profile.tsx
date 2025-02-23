@@ -3,18 +3,19 @@ import supabase from "../utils/supabase";
 import { useNavigate } from "react-router-dom";
 
 
+
 const Profile = () => {
     const [user, setUser] = useState<any>(null);
     const [profile, setProfile] = useState({
         first_name: "",
         last_name: "",
         company: "",
-        email: "",
     });
 
 
     const [editingProfile, setEditingProfile] = useState(false); // Toggle profile edit mode
     const [editingEmail, setEditingEmail] = useState(false); // Toggle email edit mode
+    const [email, setEmail] = useState("");
     const [newEmail, setNewEmail] = useState("");
     const [confirmEmail, setConfirmEmail] = useState("");
     const [emailUpdateMessage, setEmailUpdateMessage] = useState("");
@@ -45,6 +46,8 @@ const Profile = () => {
 
             const userId = authData.user.id;
             setUser(authData.user);
+            setEmail(authData.user.email || "");
+            // Get email from auth.users instead of profiles
 
 
             // Fetch profile details from Supabase
@@ -65,7 +68,6 @@ const Profile = () => {
                 first_name: profileData.first_name || "",
                 last_name: profileData.last_name || "",
                 company: profileData.company || "",
-                email: profileData.email || "",
             });
         }
 
@@ -98,7 +100,6 @@ const Profile = () => {
         }
     };
 
-
     const handleEmailUpdate = async () => {
         if (!user || !newEmail.trim() || !confirmEmail.trim()) return;
         if (newEmail.trim() !== confirmEmail.trim()) {
@@ -106,16 +107,27 @@ const Profile = () => {
             return;
         }
 
-        // Call the Supabase RPC function
-        const { data, error } = await supabase.rpc("change_user_email", {
-            new_email: newEmail.trim(),
-        });
+        // Use updateUser() to change the email in auth.users
+        //const{ error } = await supabase.auth.updateUser({email: newEmail.trim(),});
+
+        const { error } = await supabase.auth.updateUser(
+            {
+                email: newEmail.trim(), // New email
+            },
+            {
+                emailRedirectTo: "http://localhost:5173/login", // Redirect to login after confirmation
+            }
+        );
+
+
 
         if (error) {
             console.error("Email update error:", error.message);
-            alert("Failed to update email. " + error.message);
+            alert("Failed to update email: " + error.message);
         } else {
-            setEmailUpdateMessage("Email updated successfully");
+            setEmailUpdateMessage(
+                "A confirmation email has been sent to your new email. Please verify it."
+            );
             setEditingEmail(false);
         }
     };
@@ -133,7 +145,7 @@ const Profile = () => {
                     <>
                         <p><strong>Full Name:</strong> {profile.first_name} {profile.last_name}</p>
                         <p><strong>Company:</strong> {profile.company}</p>
-                        <p><strong>Email:</strong> {profile.email}</p>
+                        <p><strong>Email:</strong> {email}</p>
                         <button
                             className="border p-2 w-full mt-4 items-center rounded-md bg-green-300 hover:bg-green-200 cursor-pointer active:bg-green-600"
                             onClick={() => setEditingProfile(true)}
@@ -196,7 +208,7 @@ const Profile = () => {
                 {/* Email Section */}
                 {!editingEmail ? (
                     <>
-                        <p><strong>Current Email:</strong> {profile.email}</p>
+                        <p><strong>Current Email:</strong> {email}</p>
                         <button
                             className="border p-2 w-full mt-4 items-center rounded-md bg-green-300 hover:bg-green-200 cursor-pointer active:bg-green-600"
                             onClick={() => setEditingEmail(true)}
@@ -211,7 +223,7 @@ const Profile = () => {
                             <label className="flex">Current Email:</label>
                             <input
                                 type="text"
-                                value={profile.email}
+                                value={email}
                                 disabled
                                 className="w-full border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-500 cursor-not-allowed"
                             />
