@@ -55,7 +55,7 @@ function Register() {
       <div className='flex items-center justify-evenly px-8'>
 
         {/* Left - Laptop Image */}
-        <div className='w-1/2 flex justify-center'>
+        <div className="w-1/2 hidden lg:flex justify-center">
           <img src={Laptop} alt="laptop" className="w-full h-auto" />
         </div>
 
