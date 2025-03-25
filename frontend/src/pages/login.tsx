@@ -6,7 +6,6 @@ import Laptop from '../assets/laptop.png'
 
 function Login() {
   const [email, setEmail] = useState<string>('')
-  const [company, setCompany] = useState<string>('')
   const [password, setPassword] = useState<string>('')
   const navigate = useNavigate()
 
@@ -88,18 +87,6 @@ function Login() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
-                  className="h-12 rounded-xl border-2 border-[#2E7D32] px-4 placeholder-[#A8D5BA] bg-white focus:outline-none focus:ring-2 focus:ring-[#A8D5BA] focus:border-[#2E7D32] transition duration-200"
-                />
-              </div>
-
-              {/* COMPANY */}
-              <div className="flex flex-col">
-                <label className="text-black font-bitter font-medium text-lg mb-1">Company:</label>
-                <input
-                  type="text"
-                  placeholder="Optional"
-                  value={company}
-                  onChange={e => setCompany(e.target.value)}
                   className="h-12 rounded-xl border-2 border-[#2E7D32] px-4 placeholder-[#A8D5BA] bg-white focus:outline-none focus:ring-2 focus:ring-[#A8D5BA] focus:border-[#2E7D32] transition duration-200"
                 />
               </div>
