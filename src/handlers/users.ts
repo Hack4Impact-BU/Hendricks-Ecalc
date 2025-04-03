@@ -23,8 +23,24 @@ export async function send2FACode (req:Request, res:Response): Promise<void> {
     const userCode = Math.floor(100000 + Math.random() * 900000);
 
     // Add a check here to see if there is a code already and if the time limit is up
+    const { data:codeData , error:codeError } = await supabase
+    .from("2fa_codes")
+    .select("current_code, created_at")
+    .eq("id", userId)
+    .single();
 
-    // If the time limit is up then delete the row and insert a new code
+    // If we get a row then we know there was a code that was already sent
+    if (codeData){
+      // If the time limit is up then delete the row and insert a new code
+      const isExpired = Date.now() - new Date(codeData.created_at).getTime() > 10 * 60 * 1000;
+
+      // If its expired then delete the code and tell invalid
+      if (isExpired) {
+        await supabase.from("2fa_codes").delete().eq("id", userId);
+        res.status(401).json({ success: false, error: "expired" });
+        return;
+      }
+    }
 
     // Inserting the code into the 2fa codes table
     const { error:insertError } = await supabase
@@ -64,36 +80,39 @@ export async function send2FACode (req:Request, res:Response): Promise<void> {
 
 export async function check2FACode (req:Request, res:Response): Promise<void> {
   try {
-    console.log("Starting check")
+    
     const { userId, code }:User2FACheck = req.body;
 
+    // Fetch the code for the current user
     const { data:codeData , error:codeError } = await supabase
     .from("2fa_codes")
     .select("current_code, created_at")
     .eq("id", userId)
     .single();
 
-    console.log(codeData);
-
+    // Error checking to see if the code was found
     if (codeError || !codeData) {
       res.status(404).json({ success: false, error: "Code not found." });
       return;
     }
 
+    // See if the code is expired
     const isExpired = Date.now() - new Date(codeData.created_at).getTime() > 10 * 60 * 1000;
 
+    // If its expired then delete the code and tell invalid
     if (isExpired) {
       await supabase.from("2fa_codes").delete().eq("id", userId);
       res.status(401).json({ success: false, error: "expired" });
       return;
     }
 
+    // If its not the right code then invalid
     if (codeData.current_code !== code.trim()) {
       res.status(401).json({ success: false, error: "invalid" });
       return;
     }
 
-    // Optional: delete the used code
+    // Delete the used code
     await supabase.from("2fa_codes").delete().eq("id", userId);
 
     res.status(200).json({ success: true });
