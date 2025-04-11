@@ -3,6 +3,7 @@ import resend from "../utils/resend";
 import supabase from "../utils/supabase";
 
 import { User2FASend, User2FACheck } from "../dtos/UserEmail.dto";
+import { ContactSend } from "../dtos/ContactForm.dto";
 
 export function getUsers(req:Request, res:Response) {
   res.send('wow the route works for getUsers!')
@@ -120,5 +121,39 @@ export async function check2FACode (req:Request, res:Response): Promise<void> {
 
   } catch (error) {
     console.log(error);
+  }
+}
+
+// Sending the email using the contact form info
+export async function SendContactEmail(req:Request, res:Response): Promise<void> {
+  try {
+    const { name, email, subject, message }:ContactSend = req.body;
+
+    // Send the email with data from the contact form
+    // Determine who you want to send the email to
+    const { error: emailError } = await resend.emails.send({
+      from: 'Hendricks Foundation <no-reply@jordany.xyz>',
+      to: 'jordan.chea3@gmail.com',
+      subject: subject,
+      replyTo: email,
+      html: `
+        <h2>New Contact Form Submission</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <p><strong>Message:</strong><br/>${message}</p>
+      `,
+    });
+
+    if (emailError) {
+      console.error(emailError);
+      res.status(500).json({ success: false, message: 'Email failed to send.' });
+      return;
+    }
+
+    res.status(200).json({ success: true, message: 'Email sent successfully.' });
+    return;
+  } catch (error) {
+    console.log(error)
   }
 }
