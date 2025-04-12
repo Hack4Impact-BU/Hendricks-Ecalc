@@ -32,8 +32,9 @@ export async function send2FACode (req:Request, res:Response): Promise<void> {
 
     // If we get a row then we know there was a code that was already sent
     if (codeData){
-      // If the time limit is up then delete the row and insert a new code
-      const isExpired = Date.now() - new Date(codeData.created_at).getTime() > 10 * 60 * 1000;
+      const createdAt = new Date(codeData.created_at);
+      const expiresAt = new Date(createdAt.getTime() + 10 * 60 * 1000);
+      const isExpired = Date.now() > expiresAt.getTime();
 
       // If its expired then delete the code and tell invalid
       if (isExpired) {
@@ -41,6 +42,9 @@ export async function send2FACode (req:Request, res:Response): Promise<void> {
         res.status(401).json({ success: false, error: "expired" });
         return;
       }
+
+      res.status(200).json({ success: true, expires_at: expiresAt.toISOString()});
+      return;
     }
 
     // Inserting the code into the 2fa codes table
@@ -71,7 +75,9 @@ export async function send2FACode (req:Request, res:Response): Promise<void> {
       return;
     }
 
-    res.status(200).json({ success: true });
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    res.status(200).json({ success: true, expires_at: expiresAt.toISOString()});
     return;
   } catch (error) {
     console.error("Error in send2FACode:", error);
@@ -115,6 +121,17 @@ export async function check2FACode (req:Request, res:Response): Promise<void> {
 
     // Delete the used code
     await supabase.from("2fa_codes").delete().eq("id", userId);
+
+    const { error: updateError } = await supabase
+    .from("profiles")
+    .update({ two_fa_verified: true })
+    .eq("id", userId);
+
+    if (updateError) {
+      console.error("Error updating profile for 2FA:", updateError);
+      res.status(500).json({ success: false, error: "Failed to update 2FA status" });
+      return
+    }
 
     res.status(200).json({ success: true });
     return ;
