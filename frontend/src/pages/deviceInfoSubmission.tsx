@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import supabase from '../utils/supabase'
 import { useNavigate } from 'react-router-dom'
 import { calculateCO2Emissions, calculateMaterialComposition, MaterialComposition } from '../utils/ewasteCalculations'
-import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import { manufacturers, deviceTypes } from '../utils/deviceFormSelections'
+import TextField from '@mui/material/TextField';
+import Autocomplete from '@mui/material/Autocomplete';
 
 import currentBadges from '../utils/api'
 
@@ -16,14 +18,7 @@ export interface DeviceInfo {
     serial_number?: File | string | undefined;
 }
 
-const manufacturers: string[] = [
-    "Acer", "Alienware", "Apple", "Asus", "Averatec", "Clevo", "Compaq", "Dell", "Digital Storm",
-    "eMachines", "Everex", "EVGA Corporation", "Falcon Northwest", "Founder", "Fujitsu", "Gateway",
-    "Gigabyte Technology", "Google", "Gradiente", "Haier", "Hasee", "HP", "Huawei", "Hyundai",
-    "iBall", "IBM", "Lanix", "Lemote", "Lenovo", "LG", "Maingear", "Medion", "Micro-Star International (MSI)",
-    "Microsoft", "NEC", "Origin PC", "Panasonic", "Positivo", "Razer", "Samsung Electronics",
-    "Sharp", "Sony", "System76", "Toshiba", "Tongfang", "VIA", "Vizio", "Walton", "Xiaomi"
-  ];
+
 
 const hendricks_manufacturers: string[] = [
     "Apple", "Dell", "HP", "Lenovo", "Samsung", "Microsoft", "Acer", "Asus",
@@ -56,7 +51,8 @@ function DeviceInfoSubmission() {
         event.preventDefault();
         //making sure all fields are filled
         for (let i = 0; i < devices.length; i++) {
-            if (devices[i].device === '' || devices[i].model === '' || devices[i].manufacturer === '' || devices[i].deviceCondition === '' || devices[i].weight === '') {
+            if (devices[i].device === '' || devices[i].model === '' || devices[i].manufacturer === '' || devices[i].deviceCondition === '' || devices[i].weight === '' || devices[i].serial_number === undefined) {
+                console.log(devices[i]);
                 alert('Please fill in all fields');
                 return;
             }
@@ -73,6 +69,10 @@ function DeviceInfoSubmission() {
         const mapToInsert = devices.map((device) => {
             const materialCompositionSaved: MaterialComposition = calculateMaterialComposition(device);
             const co2Emissions: number = calculateCO2Emissions(device);
+            if (device.serial_number instanceof File) {
+                // Upload the image to Supabase Storage
+            
+            }
             return {
                 user_id: user.user.id,
                 device_type: device.device,
@@ -80,6 +80,8 @@ function DeviceInfoSubmission() {
                 manufacturer: device.manufacturer,
                 device_condition: device.deviceCondition,
                 weight: parseFloat(device.weight),
+                serial_number: typeof device.serial_number === 'string' ? device.serial_number : null, //only save the serial number if it is a string
+                serial_number_image_path: null, // this will be updated after the image is uploaded
                 ferrous_metals: materialCompositionSaved.ferrousMetal,
                 aluminum: materialCompositionSaved.aluminum,
                 copper: materialCompositionSaved.copper,
@@ -92,7 +94,7 @@ function DeviceInfoSubmission() {
                 co2_emissions: co2Emissions,
             }
         });
-        const { error } = await supabase.from('devices').insert(mapToInsert); //actual insertion of devices into supabase database
+        const { data, error } = await supabase.from('devices').insert(mapToInsert).select(); //actual insertion of devices into supabase database
 
         const alertText = await checkForBadge(user.user.id);
 
@@ -102,9 +104,44 @@ function DeviceInfoSubmission() {
             return;
         } else {
             console.log('devices successfully added')
-            navigate('/results', { state: { devices, alertText} });
         }
 
+        //need to submit serial number images to supabase storage if they exist
+        for (let i = 0; i < devices.length; i++) {
+            const sn_image: File | string | undefined = devices[i].serial_number;
+            console.log(data);
+            const deviceId: string = data?.[i]?.device_id; // get the device ID from the inserted data
+            console.log('deviceId:', deviceId);
+            if (sn_image instanceof File) {
+                const {data, error:uploadError} = await supabase.storage // upload the image to supabase storage
+                    .from('device-serial-numbers')
+                    .upload(`${user.user.id}/serial_number_${deviceId}`, sn_image)
+                if (uploadError) {
+                    console.error('Error uploading serial number image:', uploadError.message);
+                    alert('Error uploading serial number image, please enter manually under your profile page');
+                } else {
+                    console.log('Serial number image uploaded successfully');
+                }
+                
+                if (data) {
+                    // console.log('Attempting to update image path for device:', deviceId);
+                    // console.log('Image path:', data.path);
+                    const { data: updateResult, error: updateError } = await supabase
+                        .from('devices')
+                        .update({ serial_number_image_path: data.path })
+                        .eq('device_id', deviceId)
+                        .select();
+                    if (updateError) {
+                        console.error('Error updating device with serial number image path:', updateError.message);
+                        alert('Error updating device with serial number image path, please enter manually under your profile page');
+                    } else {
+                        console.log('Successfully updated:', updateResult);
+                    }
+                }
+            }
+
+        }
+        navigate('/results', { state: { devices, alertText} }); //redirect to results page on successful submission
     }
 
     // adds more devices when "+ Add more devices" is clicked
@@ -204,50 +241,109 @@ function DeviceInfoSubmission() {
                     {devices.map((device, index) => (
                         <div className="p-10 border border-gray-300 rounded-md bg-opacity-10 bg-white/50 shadow-md">
                             <div className='flex flex-col gap-1'>
-                                <label className="flex mt-[0.5vh]">Device Type:</label>
-                                <select id="device-options" onChange={e => handleFormValueChange(index, 'device', e.target.value)} className="w-full border border-gray-300 text-gray-500 rounded-md p-2 focus:outline-none focus:ring-2 bg-white">
-                                    <option value="none">Device</option>
-                                    <option value="CPU">CPU</option>
-                                    <option value="Smartphone">Smartphone</option>
-                                    <option value="Tablet">Tablet</option>
-                                    <option value="Laptop">Laptop</option>
-                                    <option value="Modern Monitor">Modern Monitor</option>
-                                    <option value="Laptop Screen">Laptop Screen</option>
-                                    <option value="CRT Monitor (Older, Not In Laptop)">CRT monitor (older, not in laptop)</option>
-                                    <option value="Mouse">Mouse</option>
-                                    <option value="Keyboard">Keyboard</option>
-                                    <option value="External Hard Drive">External hard drive</option>
-                                    <option value="Charger">Charger</option>
-                                    <option value="Printer">Printer</option>
-                                    <option value="Scanner">Scanner</option>
-                                    <option value="Copier">Copier</option>
-                                </select>
+                                <label htmlFor={`device-input-${index}`} className="flex mt-[0.5vh]">Device Type:</label>
+                                <Autocomplete
+                                    id={`device-input-${index}`} 
+                                    options={deviceTypes}
+                                    value={device.device || ''}
+                                    disableClearable
+                                    onChange={(_event, newInputValue) => {
+                                       handleFormValueChange(index, 'device', newInputValue);
+                                    }}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            placeholder="Device Type"
+                                            variant="outlined"
+                                            className="w-full border border-gray-300 rounded-md p-2 placeholder-gray-500 focus:outline-none focus:ring-2 bg-white"
+                                        />
+                                    )}
+                                />
                             </div>
                             <div className='flex flex-col gap-1'>
-                                <label className="flex mt-[0.5vh]">Manufacturer:</label>
-                                <select id="device-options" onChange={e => handleFormValueChange(index, 'manufacturer', e.target.value)} className="w-full border border-gray-300 text-gray-500 rounded-md p-2 focus:outline-none focus:ring-2 bg-white">
-                                    <option value="none">Manufacturer</option>
-                                    {manufacturers.map((manufacturer) => (
-                                        <option value={manufacturer}>{manufacturer}</option>
-                                    ))}
-                                </select>
+                                <label htmlFor={`manufacturer-input-${index}`} className="flex mt-[0.5vh]">Manufacturer:</label>
+                                <Autocomplete
+                                    id={`manufacturer-input-${index}`}
+                                    freeSolo 
+                                    options={Object.keys(manufacturers)}
+                                    value={device.manufacturer || ''}
+                                    onInputChange={(_event, newInputValue) => {
+                                       handleFormValueChange(index, 'manufacturer', newInputValue);
+                                    }}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            placeholder="Manufacturer"
+                                            variant="outlined"
+                                            className="w-full border border-gray-300 rounded-md placeholder-gray-500 focus:outline-none focus:ring-2 bg-white"
+                                        />
+                                    )}
+                                />
                             </div>
                             <div className='flex flex-col gap-1'>
-                                <label className="flex mt-[0.5vh]">Model:</label>
-                                <input type="text" placeholder="Model" onChange={e => handleFormValueChange(index, 'model', e.target.value)} className="w-full border border-gray-300 rounded-md pl-3 p-2 placeholder-gray-500 focus:outline-none focus:ring-2 bg-white" />
+                                <label htmlFor={`model-input-${index}`} className="flex mt-[0.5vh]">Model:</label>
+                                <Autocomplete
+                                    id={`model-input-${index}`}
+                                    freeSolo 
+                                    options={manufacturers[device.manufacturer] || []}
+                                    value={device.model || ''}
+                                    onInputChange={(_event, newInputValue) => {
+                                       handleFormValueChange(index, 'model', newInputValue);
+                                    }}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            placeholder="Model"
+                                            variant="outlined"
+                                            className="w-full border border-gray-300 rounded-md p-2 placeholder-gray-500 focus:outline-none focus:ring-2 bg-white"
+                                        />
+                                    )}
+                                />
                             </div>
                             <div className='flex flex-col gap-1'>
                                 <label className="flex mt-[0.5vh]">Device Condition:</label>
-                                <select id="device-options" onChange={e => handleFormValueChange(index, 'deviceCondition', e.target.value)} className="w-full border border-gray-300 text-gray-500 rounded-md p-2 focus:outline-none focus:ring-2 bg-white">
+                                {/* <select id="device-options" onChange={e => handleFormValueChange(index, 'deviceCondition', e.target.value)} className="w-full border border-gray-300 text-gray-500 rounded-md p-2 focus:outline-none focus:ring-2 bg-white">
                                     <option value="none">Device Condition</option>
                                     <option value="Excellent">Excellent</option>
                                     <option value="Lightly Used">Lightly Used</option>
                                     <option value="Worn/Damaged">Worn/Damaged</option>
-                                </select>
+                                </select> */}
+
+                                <Autocomplete
+                                    id={`device-condition-input-${index}`}
+                                    options={['Excellent', 'Lightly Used', 'Worn/Damaged']}
+                                    value={device.deviceCondition || ''}
+                                    disableClearable
+                                    onChange={(_event, newInputValue) => {
+                                       handleFormValueChange(index, 'deviceCondition', newInputValue);
+                                    }}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            placeholder="Device Condition"
+                                            variant="outlined"
+                                            className="w-full border border-gray-300 rounded-md placeholder-gray-500 focus:outline-none focus:ring-2 bg-white"
+                                        />
+                                    )}
+                                    
+                                />
                             </div>
                             <div className='flex flex-col gap-1'>
                                 <label className="flex mt-[0.5vh]">Weight(lbs):</label>
-                                <input type="number" placeholder="Value" onChange={e => handleFormValueChange(index, 'weight', e.target.value)} className="w-full border border-gray-300 rounded-md pl-3 p-2 placeholder-gray-500 focus:outline-none focus:ring-2 bg-white" />
+                                {/* <input type="number" placeholder="Value" onChange={e => handleFormValueChange(index, 'weight', e.target.value)} className="w-full border border-gray-300 rounded-md pl-3 p-2 placeholder-gray-500 focus:outline-none focus:ring-2 bg-white" /> */}
+                                <TextField
+                                    type="number"
+                                    placeholder="Value"
+                                    variant="outlined"
+                                    value={device.weight || ''} 
+                                    onChange={(e) => handleFormValueChange(index, 'weight', e.target.value)}
+                                    className="w-full border border-gray-300 rounded-md placeholder-gray-500 focus:outline-none focus:ring-2 bg-white"
+                                    sx={{
+                                        '& .MuiOutlinedInput-input': {
+                                          padding: '1vw', 
+                                        },
+                                    }}
+                                />
                             </div>
                             <div className="flex flex-col gap-1">
                                 <label className="flex mt-[0.5vh]">Serial Number:</label>
@@ -283,7 +379,20 @@ function DeviceInfoSubmission() {
                                         }
                                     </>
                                 ) : (
-                                    <input type="text" placeholder="Model" onChange={e => handleFormValueChange(index, 'model', e.target.value)} className="w-full border border-gray-300 rounded-md pl-3 p-2 placeholder-gray-500 focus:outline-none focus:ring-2 bg-white" />
+                                    // <input type="text" placeholder="Serial Number" onChange={e => handleFormValueChange(index, 'serial_number', e.target.value)} className="w-full border border-gray-300 rounded-md pl-3 p-2 placeholder-gray-500 focus:outline-none focus:ring-2 bg-white" />
+                                    <TextField
+                                        type="text"
+                                        placeholder="Serial Number"
+                                        variant="outlined"
+                                        value={device.serial_number || ''}
+                                        onChange={(e) => handleFormValueChange(index, 'serial_number', e.target.value)}
+                                        className="w-full border border-gray-300 rounded-md placeholder-gray-500 focus:outline-none focus:ring-2 bg-white"
+                                        sx={{
+                                            '& .MuiOutlinedInput-input': {
+                                              padding: '1vw', 
+                                            },
+                                        }}
+                                    />
                                 )}
                                 
                             </div>
@@ -294,7 +403,7 @@ function DeviceInfoSubmission() {
                         {devices.length > 1 ? <a onClick={removeDevice} className="self-end bg-none hover:underline cursor-pointer">- Remove device</a> : null}
                     </div> 
                 </div>
-                <button className="mt-5 border p-2 w-1/4 items-center rounded-md bg-green-300 hover:bg-green-200 cursor-pointer active:bg-green-600" type="submit">Next</button>
+                <button className="my-5 border p-2 w-1/4 items-center rounded-md bg-green-300 hover:bg-green-200 cursor-pointer active:bg-green-600" type="submit">Next</button>
             </form>
         </>
     );

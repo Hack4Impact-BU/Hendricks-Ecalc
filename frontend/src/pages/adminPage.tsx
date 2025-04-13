@@ -12,6 +12,7 @@ interface DevicesQuery{
     device_condition: string;
     manufacturer: string;
     serial_number: string;
+    serial_number_image_path: string;
     date_donated: string;
     ferrous_metals: number;
     aluminum: number;
@@ -36,6 +37,7 @@ const columnVisibilityConfigs: Record<ViewKey, VisibilityState> = {
         device_condition: true,
         manufacturer: true,
         serial_number: true,
+        serial_number_image_path: true,
         date_donated: true,
         ferrous_metals: true,
         aluminum: true,
@@ -57,6 +59,7 @@ const columnVisibilityConfigs: Record<ViewKey, VisibilityState> = {
         device_condition: false,
         manufacturer: false,
         serial_number: false,
+        serial_number_image_path: false,
         date_donated: false,
         ferrous_metals: false,
         aluminum: false,
@@ -78,6 +81,7 @@ const columnVisibilityConfigs: Record<ViewKey, VisibilityState> = {
         device_condition: true,
         manufacturer: true,
         serial_number: true,
+        serial_number_image_path: true,
         date_donated: true,
         ferrous_metals: false,
         aluminum: false,
@@ -99,6 +103,7 @@ const columnVisibilityConfigs: Record<ViewKey, VisibilityState> = {
         device_condition: false,
         manufacturer: false,
         serial_number: false,
+        serial_number_image_path: false,
         date_donated: false,
         ferrous_metals: true,
         aluminum: true,
@@ -140,7 +145,7 @@ function AdminPage() {
         async function fetchData() {
             const { data, error } = await supabase
                 .from('devices')
-                .select('device_type, model, device_id, weight, device_condition, manufacturer, serial_number, date_donated, ferrous_metals, aluminum, copper, other_metals, plastics, pcb, flat_panel_display_module, crt_glass_and_lead, batteries, co2_emissions, profiles (first_name, last_name)')
+                .select('device_type, model, device_id, weight, device_condition, manufacturer, serial_number, serial_number_image_path, date_donated, ferrous_metals, aluminum, copper, other_metals, plastics, pcb, flat_panel_display_module, crt_glass_and_lead, batteries, co2_emissions, profiles (first_name, last_name)')
             if (error) {
                 console.error("Error fetching devices:", error.message);
             } else {
@@ -168,6 +173,7 @@ function AdminPage() {
                             device_condition: device.device_condition,
                             manufacturer: device.manufacturer,
                             serial_number: device.serial_number,
+                            serial_number_image_path: device.serial_number_image_path,
                             date_donated: String(formattedDate),
                             ferrous_metals: device.ferrous_metals,
                             aluminum: device.aluminum,
@@ -199,6 +205,7 @@ function AdminPage() {
         { accessorKey: "device_condition", header: "Condition", cell: (props) => <p>{String(props.getValue())}</p> },
         { accessorKey: "manufacturer", header: "Manufacturer", cell: (props) => <p>{String(props.getValue())}</p> },
         { accessorKey: "serial_number", header: "Serial Number", cell: (props) => <p>{String(props.getValue())}</p> },
+        { accessorKey: "serial_number_image_path", header: "Serial Number Path", cell: (props) => <p>{String(props.getValue())}</p> },
         { accessorKey: "date_donated", header: "Date Donated", cell: (props) => <p>{String(props.getValue())}</p> },
         { accessorKey: "ferrous_metals", header: "Ferrous Metals", cell: (props) => <p>{String(props.getValue())}</p> },
         { accessorKey: "aluminum", header: "Aluminum", cell: (props) => <p>{String(props.getValue())}</p> },
