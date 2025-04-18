@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import path from "node:path"
 import vision from "@google-cloud/vision"
 
 import {ImageProcessing} from "../dtos/ImageProcessing.dto"
