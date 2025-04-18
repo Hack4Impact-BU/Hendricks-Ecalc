@@ -4,11 +4,12 @@ import vision from "@google-cloud/vision"
 
 import {ImageProcessing} from "../dtos/ImageProcessing.dto"
 
-const service:string = path.join('service-account-g.json');
+// Parse the string from the env var into a JSON object
+const keyObject = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON!);
 
 // Initialize the client for the google cloud vision
 const client = new vision.ImageAnnotatorClient({
-  keyFilename: service
+  credentials: keyObject
 })
 
 /** 
