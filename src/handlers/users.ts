@@ -5,14 +5,6 @@ import supabase from "../utils/supabase";
 import { User2FASend, User2FACheck } from "../dtos/UserEmail.dto";
 import { ContactSend } from "../dtos/ContactForm.dto";
 
-export function getUsers(req:Request, res:Response) {
-  res.send('wow the route works for getUsers!')
-}
-
-export function getUserById(req:Request, res:Response) {
-  res.send('wow the route works for getUserById!')
-}
-
 export async function send2FACode (req:Request, res:Response): Promise<void> {
   try {
     console.log("/2FA route hit");

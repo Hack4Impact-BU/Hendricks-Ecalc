@@ -21,10 +21,10 @@ app.use(cors({
 }));
 
 app.get('/', (req:Request, res:Response) => {
-  res.send('Express + Typescript Test')
+  res.send('The backend is responsive!')
 });
 
-// This is just a test route
+// User route
 app.use('/api/users', userRouter);
 
 // The route used for the image processing
