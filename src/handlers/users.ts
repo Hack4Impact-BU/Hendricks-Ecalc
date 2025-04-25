@@ -5,11 +5,12 @@ import supabase from "../utils/supabase";
 import { User2FASend, User2FACheck } from "../dtos/UserEmail.dto";
 import { ContactSend } from "../dtos/ContactForm.dto";
 
+// This function sends the 2FA code using resend.
 export async function send2FACode (req:Request, res:Response): Promise<void> {
   try {
     console.log("/2FA route hit");
 
-    // Get the user email and id from the json body
+    // Get the user email and id from the json body which is defined by the DTOS
     const { userEmail, userId }: User2FASend = req.body;
 
     // Generates a number from 100000 to 999999
@@ -28,18 +29,19 @@ export async function send2FACode (req:Request, res:Response): Promise<void> {
       const expiresAt = new Date(createdAt.getTime() + 10 * 60 * 1000);
       const isExpired = Date.now() > expiresAt.getTime();
 
-      // If its expired then delete the code and tell invalid
+      // If its expired then delete the code and respond with the code is invalid
       if (isExpired) {
         await supabase.from("2fa_codes").delete().eq("id", userId);
         res.status(401).json({ success: false, error: "expired" });
         return;
       }
 
+      // Otherwise if the code is not expired then send send back when the code will expire to display to the user
       res.status(200).json({ success: true, expires_at: expiresAt.toISOString()});
       return;
     }
 
-    // Inserting the code into the 2fa codes table
+    // If there isn't any row then we insert the code into the 2fa codes table
     const { error:insertError } = await supabase
     .from("2fa_codes")
     .insert({
@@ -53,7 +55,7 @@ export async function send2FACode (req:Request, res:Response): Promise<void> {
       return;
     }
 
-    // Send the code to the users email
+    // Send the code to the users email using resend
     const { error:emailError } = await resend.emails.send({
       from: 'Hendricks Foundation <no-reply@jordany.xyz>',
       to: userEmail,
@@ -67,6 +69,7 @@ export async function send2FACode (req:Request, res:Response): Promise<void> {
       return;
     }
 
+    // Then set the expiration time and send it to the frontend
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     res.status(200).json({ success: true, expires_at: expiresAt.toISOString()});
@@ -77,9 +80,11 @@ export async function send2FACode (req:Request, res:Response): Promise<void> {
   }
 }
 
+// Check the 2FA code 
 export async function check2FACode (req:Request, res:Response): Promise<void> {
   try {
     
+    // get the userId and code which is define by the DTOS
     const { userId, code }:User2FACheck = req.body;
 
     // Fetch the code for the current user

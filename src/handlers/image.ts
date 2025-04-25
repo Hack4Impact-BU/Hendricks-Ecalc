@@ -15,21 +15,15 @@ const client = new vision.ImageAnnotatorClient({
  * @deviceManufacturer what is used to identify what pattern to pick
  * @text what the ocr has recognized from the picture
  * 
- * Extracts serial numbers using regex patterns specific to each manufacturer.
+ * Extracts serial numbers using regex patterns specific to each manufacturer. If unable to find via regex or fallback
+ * then will return "No text found"
 */
 const extractSerialNumbers = async (deviceManufacturer:string, text: string): Promise<string> => {
+  // Currently only will leave it for apple manufactures
   const patterns = [
     { manufacturer: "Apple", 
       regex: /(?:Serial(?:\s+No\.?|No\.?| Number)?:?\s*)([A-Z0-9]{10,14})/i,
       fallback: /\b[A-Z0-9]{10,12}\b/ },
-    { manufacturer: "Acer", 
-      regex: /(?:S\/N:?\s*)([A-Z0-9]{22})|(?:SNID:?\s*)(\d{11})/i,
-      fallback: /\b[A-Z0-9]{22}\b|\b\d{11}\b/i},
-    { manufacturer: "Lenovo", regex: /\b[A-Z0-9]{8,10}\b/ },
-    { manufacturer: "Dell", regex: /\b[A-Z0-9]{7}\b/ },  // Example for Dell
-    { manufacturer: "HP", regex: /\b[A-Z0-9]{10,12}\b/ },
-    { manufacturer: "Asus", regex: /\b[A-Z0-9]{12,15}\b/ },
-    { manufacturer: "Microsoft", regex: /\b\d{12}\b/ }, // Surface devices
   ];
   
   const findCompany = patterns.find(company => company.manufacturer.toLowerCase() === deviceManufacturer.toLowerCase());
@@ -49,7 +43,7 @@ const extractSerialNumbers = async (deviceManufacturer:string, text: string): Pr
     }
   }
 
-  return text;
+  return "No text found";
 
 };
 
@@ -85,6 +79,7 @@ const processImage = async (req:Request, res:Response): Promise<void> => {
     // Pass in the manufacture and text from the OCR
     const computerSerialNumber = await extractSerialNumbers(manufacture,extractedText);
     console.log("EXTRACT DONE")
+    
     // Then send the response to the frontend
     res.json({ text: computerSerialNumber });
 

@@ -20,11 +20,12 @@ app.use(cors({
   allowedHeaders: "Content-Type, Authorization"
 }));
 
+// When going to the backend host, just make a get response to make sure it is running
 app.get('/', (req:Request, res:Response) => {
   res.send('The backend is responsive!')
 });
 
-// User route
+// User route for 2fa and sending contact form email
 app.use('/api/users', userRouter);
 
 // The route used for the image processing
