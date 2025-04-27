@@ -12,7 +12,7 @@ function ForgotPassword() {
 
     // Check for existing user session
     useEffect(() => {
-        supabase.auth.onAuthStateChange(async (event, session) => {
+        supabase.auth.onAuthStateChange(async (event, _session) => {
           if (event == "PASSWORD_RECOVERY") {
             setValidSession(true)
           }
@@ -31,7 +31,7 @@ function ForgotPassword() {
             return
         } 
         else { // reset password if all checks pass
-            const { data, error } = await supabase.auth.updateUser({ //call update user function from supabase
+            const { data:_userResponse, error } = await supabase.auth.updateUser({ //call update user function from supabase
                 password: password
             })
 

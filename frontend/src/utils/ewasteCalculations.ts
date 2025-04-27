@@ -1,7 +1,7 @@
 import { DeviceInfo } from "../pages/deviceInfoSubmission";
 
 //interface for material composition of a device, used for both material weight and CO2 emissions calculations
-interface MaterialComposition {
+export interface MaterialComposition {
     ferrousMetal: number;
     aluminum: number;
     copper: number;

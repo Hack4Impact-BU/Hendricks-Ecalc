@@ -5,6 +5,8 @@ import { AuthResponse } from "@supabase/supabase-js";
 import Laptop from '../assets/laptop.png'
 import { Turnstile } from '@marsidev/react-turnstile'
 
+import { User } from '@supabase/supabase-js'
+import { Profile } from '../utils/types'
 
 function Register() {
   const [email, setEmail] = useState<string>('')
@@ -17,11 +19,33 @@ function Register() {
   const [captchaError, setCaptchaError] = useState<string | null>(null);
   const navigate = useNavigate() //used to redirect to different page
 
+  const frontendURL = import.meta.env.VITE_FRONTEND_URL || "http://localhost:5173";
+
   //checking for existing user session
   useEffect(() => {
+    console.log(import.meta.env.VITE_FRONTEND_URL)
+    async function checkUser(user: User) {
+      const { data: rawData, error: userError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+      if (userError || !rawData) {
+          console.error("Profile lookup failed", userError);
+          navigate("/login");
+          return;
+      }
+      
+      const userData = rawData as Profile;
+      if (userData.two_fa_verified === false) {
+          navigate("/login");
+      }
+    }
+    
     const { data: authListener } = supabase.auth.onAuthStateChange((_, session) => {
       if (session) {
-        navigate("/welcome"); //redirect to welcome page if user is already logged in
+        checkUser(session.user);
       }
     });
 
@@ -41,7 +65,7 @@ function Register() {
       email,
       password,
       options: {
-        emailRedirectTo: 'http://localhost:5173/welcome', //temporary welcome link
+        emailRedirectTo: `${frontendURL}`, //temporary welcome link
         data: { company: company.trim() }, // Send company info in metadata
         captchaToken
       },
@@ -70,14 +94,14 @@ function Register() {
 
   return (
     <>
-      <div className='flex items-center justify-evenly px-8'>
+      <div className='flex items-center justify-evenly px-4 py-8 md:px-10 md:py-10'>
 
         {/* Left - Laptop Image */}
-        <div className='w-1/2 flex justify-center'>
+        <div className='w-1/2 hidden lg:flex justify-center'>
           <img src={Laptop} alt="laptop" className="w-full h-auto" />
         </div>
 
-        <div className="w-full max-w-xl flex flex-col items-center  mt-5 px-4 sm:px-5 md:px-6">
+        <div className="w-full max-w-xl flex flex-col items-center  mt-5 sm:px-5 md:px-6">
 
           {/* Title Section */}
           <div className="mb-4 text-center">
@@ -133,11 +157,13 @@ function Register() {
                 />
               </div>
 
-              <div className="flex flex-col">
+              <div className='flex justify-center items-center'>
                 <Turnstile
-                  key={captchaKey} // Change this key to reset
+                  key={captchaKey}
                   siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
-                  onSuccess={(token) => { setCaptchaToken(token) }} />
+                  onSuccess={(token) => { setCaptchaToken(token) }} 
+                  className='scale-[80%]  sm:scale-100'
+                />
 
                 {captchaError && <p style={{ color: 'red', fontSize: '0.75rem' }}>{captchaError}</p>}
               </div>

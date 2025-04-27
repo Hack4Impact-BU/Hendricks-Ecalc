@@ -1,9 +1,42 @@
+import { SyntheticEvent, useState } from "react";
 import { Mail, MapPin, Facebook, Twitter, Linkedin, Instagram } from "lucide-react"
+import axios from "axios";
 
 const Contact = () => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+
+  const [loading, setLoading] = useState(false);
+
+  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const sendEmail = async (e:SyntheticEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await axios.post(`${apiBase}/api/users/send-contact`, {
+        name,
+        email,
+        subject,
+        message
+      });
+      setName("");
+      setEmail("");
+      setSubject("");
+      setMessage("");
+      setLoading(false);
+      alert("Email has been sent!")
+    } catch (error) {
+      alert("An error occurred sending the email. Please try again.");
+      setLoading(false);
+    }
+  }
+
   return(
 
-    <div className="flex flex-row flex-wrap justify-start items-center px-[24px] py-[40px]">
+    <div className="flex flex-row flex-wrap justify-start items-center px-4 py-8 md:px-10 md:py-10">
       
       {/* Left side – Contact Info box */}
       <div className="flex flex-col flex-wrap justify-start items-stretch z-1 lg:mr-[-280px] bg-black text-white px-8 py-16 rounded-2xl shadow-lg w-full mx-auto lg:w-[30%]">
@@ -55,7 +88,7 @@ const Contact = () => {
         </div>
         
         {/* Start of form */}
-        <form className="flex flex-col gap-5 ">
+        <form className="flex flex-col gap-5" onSubmit={sendEmail}>
 
         {/* Name */}
         <div className="flex flex-col">
@@ -63,7 +96,8 @@ const Contact = () => {
           <input
             type="text"
             placeholder="Enter your name"
-            value=""
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             required
             className="h-12 rounded-xl border-2 border-[#2E7D32] px-4 placeholder-[#A8D5BA] bg-white focus:outline-none focus:ring-2 focus:ring-[#A8D5BA] focus:border-[#2E7D32] transition duration-200"
           />
@@ -75,7 +109,8 @@ const Contact = () => {
           <input
             type="email"
             placeholder="Enter your email"
-            value=""
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}            
             required
             className="h-12 rounded-xl border-2 border-[#2E7D32] px-4 placeholder-[#A8D5BA] bg-white focus:outline-none focus:ring-2 focus:ring-[#A8D5BA] focus:border-[#2E7D32] transition duration-200"
           />
@@ -87,7 +122,8 @@ const Contact = () => {
           <input
             type="text"
             placeholder="Email subject"
-            value=""
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}            
             required
             className="h-12 rounded-xl border-2 border-[#2E7D32] px-4 placeholder-[#A8D5BA] bg-white focus:outline-none focus:ring-2 focus:ring-[#A8D5BA] focus:border-[#2E7D32] transition duration-200"
           />
@@ -96,12 +132,12 @@ const Contact = () => {
         {/* Message */}
         <div className="flex flex-col">
           <label className="text-black font-bitter font-medium text-lg mb-1">Message:</label>
-          <input
-            type="text"
+          <textarea
             placeholder="Write your message..."
-            value=""
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}            
             required
-            className="h-12 rounded-xl border-2 border-[#2E7D32] px-4 placeholder-[#A8D5BA] bg-white focus:outline-none focus:ring-2 focus:ring-[#A8D5BA] focus:border-[#2E7D32] transition duration-200"
+            className="h-24 rounded-xl border-2 border-[#2E7D32] pt-2 px-4 placeholder-[#A8D5BA] bg-white focus:outline-none focus:ring-2 focus:ring-[#A8D5BA] focus:border-[#2E7D32] transition duration-200"
           />
         </div>
 
@@ -109,7 +145,10 @@ const Contact = () => {
         <div className="flex flex-col justify-center items-center mt-3">
           <button
             className="w-full bg-[#FFE017] shadow-md text-white font-bold text-lg py-2 px-10 rounded-full transition duration-200 cursor-pointer hover:brightness-105"
-            type="submit">Send</button>
+            type="submit"
+          >
+            {loading ? "Sending..." : "Send"}  
+          </button>
         </div>
       </form>
     </div>

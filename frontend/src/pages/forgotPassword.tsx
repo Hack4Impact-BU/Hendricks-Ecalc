@@ -5,10 +5,12 @@ function ForgotPassword() {
     const [email, setEmail] = useState<string>('')
     // const [visibility, setVisibility] = useState<boolean>(false)
 
+    const frontendURL = import.meta.env.VITE_FRONTEND_URL || "http://localhost:5173";
+
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
         event.preventDefault()
         const { data, error } = await supabase.auth.resetPasswordForEmail(email, { //call reset password function from supabase
-            redirectTo: 'http://localhost:5173/reset-password', //temporary reset link
+            redirectTo: `${frontendURL}/reset-password`, //temporary reset link
         })
 
         // Error handling

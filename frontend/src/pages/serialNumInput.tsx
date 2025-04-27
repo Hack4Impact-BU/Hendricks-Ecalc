@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import supabase from "../utils/supabase";
 import { useNavigate } from 'react-router-dom'
 
 
 export default function SerialNumInput() {
-    const [serialNum, setSerialNum] = useState<string>('');
-    const [error, setError] = useState<string | null>(null);
+    // const [serialNum, setSerialNum] = useState<string>('');
+    // const [error, setError] = useState<string | null>(null);
 
     const navigate = useNavigate();
 
