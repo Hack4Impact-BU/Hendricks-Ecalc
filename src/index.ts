@@ -9,13 +9,14 @@ import imageRouter from './routes/image';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const fontendURL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // Original limit for express json body parser is 100KB so made it 10mb
 app.use(express.json({ limit: "10mb" }));
 
 // Use cors setup so the frontend can make a request to the backend
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: fontendURL,
   methods: "GET, POST, PUT, DELETE",
   allowedHeaders: "Content-Type, Authorization"
 }));
